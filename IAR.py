@@ -3,69 +3,49 @@ from tkinter import ttk
 from tkinter import messagebox as mb
 import requests
 
-def update_b_label(event):
-    # Получаем полное название базовой криптовалюты из словаря и обновляем метку
+def update_label(event):
     code = b_combobox.get()
-    name = currencies[code]
-    b_label.config(text=name)
+    currencies_names = {
+        "BTC": "Bitcoin", "ETH": "Ethereum", "USDT": "Tether", "BNB": "Binance Coin",
+        "SOL": "Solana", "USDC": "USD Coin", "DOGE": "Dogecoin", "TRX": "TRON",
+        "ADA": "Cardano", "LINK": "ChainLink", "HYPE": "Hyperliquid"
+    }
+    b_label.config(text=currencies_names.get(code, ""))
 
 def exchange():
     b_code = b_combobox.get()
-
-    if b_code:
-        try:
-            response = requests.get('https://api.coinlore.net/api/tickers/')
-            response.raise_for_status()
-
-            data = response.json()['data']
-            
-            # Ищем криптовалюту по символу
-            crypto_data = None
-            for crypto in data:
-                if crypto['symbol'] == b_code:
-                    crypto_data = crypto
-                    break
-            
-            if crypto_data:
-                price_usd = float(crypto_data['price_usd'])
-                symbol = crypto_data['symbol']
-                name = crypto_data['name']
+    if not b_code:
+        mb.showwarning("Внимание", "Выберите криптовалюту")
+        return
+        
+    try:
+        response = requests.get('https://api.coinlore.net/api/tickers/')
+        response.raise_for_status()
+        
+        for crypto in response.json()['data']:
+            if crypto['symbol'] == b_code:
+                price = float(crypto['price_usd'])
+                mb.showinfo("Курс", f"1 {crypto['symbol']} ({crypto['name']}) = ${price:.2f}")
+                return
                 
-                mb.showinfo("Курс обмена", f"Курс {symbol} ({name}): ${price_usd:.2f}")
-            else:
-                mb.showerror("Ошибка", f"Криптовалюта {b_code} не найдена")
-        except Exception as e:
-            mb.showerror("Ошибка", f"Ошибка: {e}")
-    else:
-        mb.showwarning("Внимание", "Выберите коды криптовалют")
+        mb.showerror("Ошибка", f"Криптовалюта {b_code} не найдена")
+    except Exception as e:
+        mb.showerror("Ошибка", f"Ошибка: {e}")
 
-# Словарь кодов валют и их полных названий
-currencies = {
-    "BTC": "Bitcoin",
-    "ETH": "Ethereum",
-    "USDT": "Tether",
-    "BNB": "Binance Coin",
-    "SOL": "Solana",
-    "USDC": "USD Coin",
-    "DOGE": "Dogecoin",
-    "TRX": "TRON",
-    "ADA": "Cardano",
-    "LINK": "ChainLink",
-    "HYPE": "Hyperliquid"
-}
+currencies = ["BTC", "ETH", "USDT", "BNB", "SOL", "USDC", "DOGE", "TRX", "ADA", "LINK", "HYPE"]
 
 # Создание графического интерфейса
 window = Tk()
-window.title("Курс обмена криптовалюты")
-window.geometry("360x300")
+window.title("Курс криптовалют")
+window.geometry("300x240")
 
-Label(text="Базовая криптовалюта:").pack(padx=10, pady=5)
-b_combobox = ttk.Combobox(values=list(currencies.keys()))
+Label(text="Криптовалюта:").pack(padx=10, pady=5)
+b_combobox = ttk.Combobox(values=currencies)
 b_combobox.pack(padx=10, pady=5)
-b_combobox.bind("<<ComboboxSelected>>", update_b_label)
+b_combobox.bind("<<ComboboxSelected>>", update_label)
 
 b_label = ttk.Label()
-b_label.pack(padx=10, pady=10)
+b_label.pack(padx=10, pady=5)
 
 Button(text="Получить курс", command=exchange).pack(padx=10, pady=10)
 
