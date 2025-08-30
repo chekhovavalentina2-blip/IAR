@@ -9,48 +9,49 @@ def update_b_label(event):
     name = currencies[code]
     b_label.config(text=name)
 
-def update_t_label(event):
-    # Получаем полное название целевой криптовалюты из словаря и обновляем метку
-    code = t_combobox.get()
-    name = currencies[code]
-    t_label.config(text=name)
-
 def exchange():
-    t_code = t_combobox.get()
     b_code = b_combobox.get()
 
-    if t_code and b_code:
+    if b_code:
         try:
-            response = requests.get(f'https://open.er-api.com/v6/latest/{b_code}')
+            response = requests.get('https://api.coinlore.net/api/tickers/')
             response.raise_for_status()
 
-            data = response.json()
-
-            if t_code in data['rates']:
-                exchange_rate = data['rates'][t_code]
-                base = currencies[b_code]
-                target = currencies[t_code]
-                mb.showinfo("Курс обмена", f"Курс {exchange_rate:.1f} {target} за 1 {base}")
+            data = response.json()['data']
+            
+            # Ищем криптовалюту по символу
+            crypto_data = None
+            for crypto in data:
+                if crypto['symbol'] == b_code:
+                    crypto_data = crypto
+                    break
+            
+            if crypto_data:
+                price_usd = float(crypto_data['price_usd'])
+                symbol = crypto_data['symbol']
+                name = crypto_data['name']
+                
+                mb.showinfo("Курс обмена", f"Курс {symbol} ({name}): ${price_usd:.2f}")
             else:
-                mb.showerror("Ошибка", f"Валюта {t_code} не найдена")
+                mb.showerror("Ошибка", f"Криптовалюта {b_code} не найдена")
         except Exception as e:
             mb.showerror("Ошибка", f"Ошибка: {e}")
     else:
-        mb.showwarning("Внимание", "Выберите коды валют")
+        mb.showwarning("Внимание", "Выберите коды криптовалют")
 
 # Словарь кодов валют и их полных названий
 currencies = {
-    "USD": "Американский доллар",
-    "EUR": "Евро",
-    "JPY": "Японская йена",
-    "GBP": "Британский фунт стерлингов",
-    "AUD": "Австралийский доллар",
-    "CAD": "Канадский доллар",
-    "CHF": "Швейцарский франк",
-    "CNY": "Китайский юань",
-    "RUB": "Российский рубль",
-    "KZT": "Казахстанский тенге",
-    "UZS": "Узбекский сум"
+    "BTC": "Bitcoin",
+    "ETH": "Ethereum",
+    "USDT": "Tether",
+    "BNB": "Binance Coin",
+    "SOL": "Solana",
+    "USDC": "USD Coin",
+    "DOGE": "Dogecoin",
+    "TRX": "TRON",
+    "ADA": "Cardano",
+    "LINK": "ChainLink",
+    "HYPE": "Hyperliquid"
 }
 
 # Создание графического интерфейса
@@ -66,14 +67,6 @@ b_combobox.bind("<<ComboboxSelected>>", update_b_label)
 b_label = ttk.Label()
 b_label.pack(padx=10, pady=10)
 
-Label(text="Целевая криптовалюта:").pack(padx=10, pady=5)
-t_combobox = ttk.Combobox(values=list(currencies.keys()))
-t_combobox.pack(padx=10, pady=5)
-t_combobox.bind("<<ComboboxSelected>>", update_t_label)
-
-t_label = ttk.Label()
-t_label.pack(padx=10, pady=10)
-
-Button(text="Получить курс обмена", command=exchange).pack(padx=10, pady=10)
+Button(text="Получить курс", command=exchange).pack(padx=10, pady=10)
 
 window.mainloop()
